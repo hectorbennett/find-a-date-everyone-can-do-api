@@ -1,10 +1,14 @@
+use crate::models::event::{Event, NewEvent};
+use crate::models::user::{NewUser, User};
 use chrono::prelude::*;
 use std::collections::HashMap;
 use std::fmt::Error;
 use std::sync::{Arc, Mutex};
+use tinyid::TinyId;
 
-use crate::models::event::{Event, NewEvent};
-use crate::models::user::{NewUser, User};
+fn new_id() -> String {
+    TinyId::random().to_string()
+}
 
 pub struct Database {
     pub events: Arc<Mutex<Vec<Event>>>,
@@ -31,7 +35,7 @@ impl Database {
 
     pub fn create_event(&self, event: NewEvent) -> Result<Event, Error> {
         let mut events = self.events.lock().unwrap();
-        let id = uuid::Uuid::new_v4().to_string();
+        let id = new_id();
         let event = Event {
             id,
             name: event.name,
@@ -49,7 +53,7 @@ impl Database {
             .iter_mut()
             .find(|event| event.id == event_id.to_string())
             .unwrap();
-        let id = uuid::Uuid::new_v4().to_string();
+        let id = new_id();
         let user = User {
             id: id.clone(),
             name: user.name,
