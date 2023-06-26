@@ -1,11 +1,12 @@
 use std::str::FromStr;
 
+use chrono::NaiveDate;
 use deadpool_postgres::Client;
 use uuid::Uuid;
 
 use crate::{
     errors::errors::MyError,
-    models::{event::Event, user::User},
+    models::{date::DateEntry, event::Event, user::User},
 };
 
 pub async fn get_events(client: &Client) -> Result<Vec<Event>, MyError> {
@@ -82,6 +83,34 @@ pub async fn create_user(
     Ok(user)
 }
 
+pub async fn add_user_date(
+    client: &Client,
+    event_id: &str,
+    user_id: &str,
+    date: &str,
+) -> Result<DateEntry, MyError> {
+    let sql = "INSERT INTO dates(event_id, user_id, date) VALUES($1, $2, CAST($3 AS DATE)) RETURNING user_id::TEXT, date::TEXT";
+    let query = client.prepare(&sql).await?;
+    let response = client
+        .query(
+            &query,
+            &[
+                &Uuid::from_str(event_id).unwrap(),
+                &Uuid::from_str(user_id).unwrap(),
+                &NaiveDate::parse_from_str(date, "%Y-%m-%d").unwrap(),
+            ],
+        )
+        .await
+        .unwrap();
+    let date_entry = response
+        .iter()
+        .map(|row| DateEntry::from(row))
+        .collect::<Vec<DateEntry>>()
+        .pop()
+        .unwrap();
+    Ok(date_entry)
+}
+
 // pub async fn get_event_date_selections(client: &Client, event_id: &str) -> Result<Vec<User>, MyError> {
 //     let sql = "SELECT id::TEXT, name FROM users";
 //     let query = client.prepare(&sql).await.unwrap();
@@ -94,7 +123,6 @@ pub async fn create_user(
 
 //     Ok(users)
 // }
-
 
 // use deadpool_postgres::Client;
 // use tokio_pg_mapper::FromTokioPostgresRow;

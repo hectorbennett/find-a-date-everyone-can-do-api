@@ -1,7 +1,7 @@
 use crate::{
     db::db,
     errors::errors::MyError,
-    models::{event::NewEvent, user::NewUser},
+    models::{date::DatePayload, event::NewEvent, user::NewUser},
 };
 use actix_web::{
     // delete,
@@ -22,21 +22,6 @@ use deadpool_postgres::{Client, Pool};
 // pub async fn get_events(db: web::Data<Database>) -> HttpResponse {
 //     let events = db.get_events();
 //     HttpResponse::Ok().json(events)
-// }
-
-// #[post("/events/{event_id}/users/{user_id}/dates")]
-// pub async fn add_user_date(
-//     db: web::Data<Database>,
-//     path: web::Path<(String, String)>,
-//     date_payload: web::Json<DatePayload>,
-// ) -> HttpResponse {
-//     let (event_id, user_id) = path.into_inner();
-//     let date = NaiveDate::parse_from_str(&date_payload.date, "%Y-%m-%d").unwrap();
-//     let t = db.add_user_date(&event_id, &user_id, date);
-//     match t {
-//         Ok(thing) => HttpResponse::Ok().json(thing),
-//         Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
-//     }
 // }
 
 // #[delete("/events/{event_id}/users/{user_id}/dates")]
@@ -112,6 +97,18 @@ pub async fn get_event_users(
     Ok(HttpResponse::Ok().json(events))
 }
 
+#[post("/events/{event_id}/users/{user_id}/dates")]
+pub async fn add_user_date(
+    db_pool: web::Data<Pool>,
+    path: web::Path<(String, String)>,
+    date_payload: web::Json<DatePayload>,
+) -> Result<HttpResponse, Error> {
+    let (event_id, user_id) = path.into_inner();
+    let client: Client = db_pool.get().await.map_err(MyError::PoolError)?;
+    let date_entry = db::add_user_date(&client, &event_id, &user_id, &date_payload.date).await?;
+    Ok(HttpResponse::Ok().json(date_entry))
+}
+
 // #[get("/events/{event_id}/date_selections")]
 // pub async fn get_event_date_selections(
 //     db_pool: web::Data<Pool>,
@@ -129,6 +126,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .service(get_event)
             .service(create_event)
             .service(create_user)
-            .service(get_event_users),
+            .service(get_event_users)
+            .service(add_user_date),
     );
 }
