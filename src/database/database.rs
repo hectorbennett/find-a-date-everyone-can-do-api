@@ -32,12 +32,12 @@ impl Database {
     pub fn create_event(&self, event: NewEvent) -> Result<Event, Error> {
         let mut events = self.events.lock().unwrap();
         let id = uuid::Uuid::new_v4().to_string();
-        // let created_at = Utc::now();
-        // let updated_at = Utc::now();
         let event = Event {
             id,
             name: event.name,
             users: HashMap::new(),
+            creation_date: Utc::now(),
+            modification_date: Utc::now(),
         };
         events.push(event.clone());
         Ok(event)
@@ -56,6 +56,7 @@ impl Database {
             dates: vec![],
         };
         event.users.insert(id, user.clone());
+        event.modification_date = Utc::now();
         Ok(user)
     }
 
@@ -72,6 +73,7 @@ impl Database {
             .unwrap();
         let user = event.users.get_mut(user_id).unwrap();
         user.dates.push(date);
+        event.modification_date = Utc::now();
         Ok(user.clone())
     }
 
@@ -88,6 +90,7 @@ impl Database {
             .unwrap();
         let user = event.users.get_mut(user_id).unwrap();
         user.dates.retain(|&d| d != date);
+        event.modification_date = Utc::now();
         Ok(user.clone())
     }
 }

@@ -5,13 +5,11 @@ use crate::{
         user::{DatePayload, NewUser},
     },
 };
-use actix_web::{delete, get, post, put, web, HttpResponse};
+use actix_web::{delete, get, post, web, HttpResponse};
 use chrono::NaiveDate;
-use serde::{Deserialize, Serialize};
 
 #[post("/events")]
 pub async fn create_event(db: web::Data<Database>, new_event: web::Json<NewEvent>) -> HttpResponse {
-    println!("{}", "Hello world 1");
     let event = db.create_event(new_event.into_inner());
     match event {
         Ok(event) => HttpResponse::Ok().json(event),
@@ -21,7 +19,6 @@ pub async fn create_event(db: web::Data<Database>, new_event: web::Json<NewEvent
 
 #[get("/events/{id}")]
 pub async fn get_event(db: web::Data<Database>, id: web::Path<String>) -> HttpResponse {
-    println!("{}", "Hello world 2");
     let event = db.get_event(&id);
     match event {
         Some(event) => HttpResponse::Ok().json(event),
@@ -31,7 +28,6 @@ pub async fn get_event(db: web::Data<Database>, id: web::Path<String>) -> HttpRe
 
 #[get("/events")]
 pub async fn get_events(db: web::Data<Database>) -> HttpResponse {
-    println!("{}", "Hello world 3");
     let events = db.get_events();
     HttpResponse::Ok().json(events)
 }
@@ -42,7 +38,6 @@ pub async fn create_user(
     event_id: web::Path<String>,
     new_user: web::Json<NewUser>,
 ) -> HttpResponse {
-    println!("{}", "Hello world 4");
     let user = db.create_user(&event_id, new_user.into_inner());
     match user {
         Ok(u) => HttpResponse::Ok().json(u),
@@ -57,7 +52,6 @@ pub async fn add_user_date(
     date_payload: web::Json<DatePayload>,
 ) -> HttpResponse {
     let (event_id, user_id) = path.into_inner();
-    println!("{}", "Hello world 5");
     let date = NaiveDate::parse_from_str(&date_payload.date, "%Y-%m-%d").unwrap();
     let t = db.add_user_date(&event_id, &user_id, date);
     match t {

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-// use chrono::prelude::{DateTime, Utc};
+use chrono::prelude::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use super::user::User;
@@ -15,4 +15,6 @@ pub struct Event {
     pub id: String,
     pub name: String,
     pub users: HashMap<String, User>,
+    pub creation_date: DateTime<Utc>,
+    pub modification_date: DateTime<Utc>,
 }
