@@ -1,10 +1,16 @@
+use crate::config::config::ExampleConfig;
+use ::config::Config;
 use actix_cors::Cors;
 use actix_web::{get, middleware::Logger, web, App, HttpResponse, HttpServer, Responder, Result};
 use dotenv::dotenv;
+use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
+use postgres_openssl::MakeTlsConnector;
 use serde::Serialize;
 
-mod api;
-mod database;
+mod config;
+mod db;
+mod errors;
+mod handlers;
 mod models;
 
 #[derive(Serialize)]
@@ -32,23 +38,35 @@ async fn main() -> std::io::Result<()> {
     dotenv().ok();
     env_logger::init();
 
-    let todo_db = database::database::Database::new();
-    let app_data = web::Data::new(todo_db);
+    let config_ = Config::builder()
+        .add_source(::config::Environment::default())
+        .build()
+        .unwrap();
+
+    let config: ExampleConfig = config_.try_deserialize().unwrap();
+
+    let mut builder =
+        SslConnector::builder(SslMethod::tls()).expect("unable to create sslconnector builder");
+    builder
+        .set_ca_file("/Users/hectorbennett/dev/find-a-date-everyone-can-do-api/ca-certificate.crt")
+        .expect("unable to load ca.cert");
+    builder.set_verify(SslVerifyMode::NONE);
+
+    let connector = MakeTlsConnector::new(builder.build());
+
+    let pool = config.pg.create_pool(None, connector).unwrap();
 
     HttpServer::new(move || {
-        dotenv().ok();
-
-        let cors = Cors::permissive();
-
         App::new()
             .wrap(Logger::default())
-            .wrap(cors)
-            .app_data(app_data.clone())
-            .configure(api::api::config)
+            .wrap(Cors::permissive())
+            .app_data(web::Data::new(pool.clone()))
+            // .service(web::resource("/events").route(web::get().to(handlers::handlers::get_events)))
+            .configure(handlers::handlers::config)
             .service(healthcheck)
             .default_service(web::route().to(not_found))
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind(config.server_addr.clone())?
     .run()
     .await
 }
