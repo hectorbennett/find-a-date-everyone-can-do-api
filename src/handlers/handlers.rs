@@ -3,51 +3,9 @@ use crate::{
     errors::errors::MyError,
     models::{date::DatePayload, event::NewEvent, user::NewUser},
 };
-use actix_web::{
-    // delete,
-    get,
-    post,
-    web,
-    Error,
-    HttpResponse,
-};
-// use chrono::NaiveDate;
+use actix_web::{get, post, web, Error, HttpResponse};
 
-// use actix_web::{web, Error};
 use deadpool_postgres::{Client, Pool};
-
-// use crate::{db, errors::MyError, models::User};
-
-// #[get("/events")]
-// pub async fn get_events(db: web::Data<Database>) -> HttpResponse {
-//     let events = db.get_events();
-//     HttpResponse::Ok().json(events)
-// }
-
-// #[delete("/events/{event_id}/users/{user_id}/dates")]
-// pub async fn remove_user_date(
-//     db: web::Data<Database>,
-//     path: web::Path<(String, String)>,
-//     date_payload: web::Json<DatePayload>,
-// ) -> HttpResponse {
-//     let (event_id, user_id) = path.into_inner();
-//     let date = NaiveDate::parse_from_str(&date_payload.date, "%Y-%m-%d").unwrap();
-//     let t = db.remove_user_date(&event_id, &user_id, date);
-//     match t {
-//         Ok(thing) => HttpResponse::Ok().json(thing),
-//         Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
-//     }
-// }
-
-// pub async fn get_events(db_pool: web::Data<Pool>) -> Result<HttpResponse, Error> {
-//     let user_info: User = user.into_inner();
-
-//     let client: Client = db_pool.get().await.map_err(MyError::PoolError)?;
-
-//     let new_user = db::add_user(&client, user_info).await?;
-
-//     Ok(HttpResponse::Ok().json(new_user))
-// }
 
 #[get("/events")]
 pub async fn get_events(db_pool: web::Data<Pool>) -> Result<HttpResponse, Error> {
@@ -97,6 +55,16 @@ pub async fn get_event_users(
     Ok(HttpResponse::Ok().json(events))
 }
 
+#[get("/events/{event_id}/dates")]
+pub async fn get_event_dates(
+    db_pool: web::Data<Pool>,
+    event_id: web::Path<String>,
+) -> Result<HttpResponse, Error> {
+    let client: Client = db_pool.get().await.map_err(MyError::PoolError)?;
+    let dates = db::get_event_dates(&client, &event_id.into_inner()).await?;
+    Ok(HttpResponse::Ok().json(dates))
+}
+
 #[post("/events/{event_id}/users/{user_id}/dates")]
 pub async fn add_user_date(
     db_pool: web::Data<Pool>,
@@ -109,24 +77,15 @@ pub async fn add_user_date(
     Ok(HttpResponse::Ok().json(date_entry))
 }
 
-// #[get("/events/{event_id}/date_selections")]
-// pub async fn get_event_date_selections(
-//     db_pool: web::Data<Pool>,
-//     event_id: web::Path<String>,
-// ) -> Result<HttpResponse, Error> {
-//     let client: Client = db_pool.get().await.map_err(MyError::PoolError)?;
-//     let events = db::get_event_date_selections(&client, &event_id.into_inner()).await?;
-//     Ok(HttpResponse::Ok().json(events))
-// }
-
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("")
-            .service(get_events)
-            .service(get_event)
+            .service(add_user_date)
             .service(create_event)
             .service(create_user)
+            .service(get_event_dates)
             .service(get_event_users)
-            .service(add_user_date),
+            .service(get_event)
+            .service(get_events),
     );
 }

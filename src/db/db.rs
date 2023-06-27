@@ -50,10 +50,10 @@ pub async fn create_event(client: &Client, event_name: &str) -> Result<Event, My
 }
 
 pub async fn get_event_users(client: &Client, event_id: &str) -> Result<Vec<User>, MyError> {
-    let sql = "SELECT id::TEXT, name FROM users";
+    let sql = "SELECT id::TEXT, name FROM users WHERE event_id = $1";
     let query = client.prepare(&sql).await.unwrap();
     let users = client
-        .query(&query, &[])
+        .query(&query, &[&Uuid::from_str(event_id).unwrap()])
         .await?
         .iter()
         .map(|row| User::from(row))
@@ -81,6 +81,20 @@ pub async fn create_user(
         .pop()
         .unwrap();
     Ok(user)
+}
+
+pub async fn get_event_dates(client: &Client, event_id: &str) -> Result<Vec<DateEntry>, MyError> {
+    let sql = "SELECT user_id::TEXT, date::TEXT FROM dates WHERE event_id = $1";
+    let query = client.prepare(&sql).await?;
+    let response = client
+        .query(&query, &[&Uuid::from_str(event_id).unwrap()])
+        .await
+        .unwrap();
+    let date_entries = response
+        .iter()
+        .map(|row| DateEntry::from(row))
+        .collect::<Vec<DateEntry>>();
+    Ok(date_entries)
 }
 
 pub async fn add_user_date(

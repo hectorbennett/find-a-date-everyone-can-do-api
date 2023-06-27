@@ -61,7 +61,6 @@ async fn main() -> std::io::Result<()> {
             .wrap(Logger::default())
             .wrap(Cors::permissive())
             .app_data(web::Data::new(pool.clone()))
-            // .service(web::resource("/events").route(web::get().to(handlers::handlers::get_events)))
             .configure(handlers::handlers::config)
             .service(healthcheck)
             .default_service(web::route().to(not_found))
