@@ -3,7 +3,7 @@ use crate::{
     errors::errors::MyError,
     models::{date::DatePayload, event::NewEvent, user::NewUser},
 };
-use actix_web::{get, post, web, Error, HttpResponse};
+use actix_web::{delete, get, post, web, Error, HttpResponse};
 
 use deadpool_postgres::{Client, Pool};
 
@@ -77,6 +77,18 @@ pub async fn add_user_date(
     Ok(HttpResponse::Ok().json(date_entry))
 }
 
+#[delete("/events/{event_id}/users/{user_id}/dates")]
+pub async fn remove_user_date(
+    db_pool: web::Data<Pool>,
+    path: web::Path<(String, String)>,
+    date_payload: web::Json<DatePayload>,
+) -> Result<HttpResponse, Error> {
+    let (event_id, user_id) = path.into_inner();
+    let client: Client = db_pool.get().await.map_err(MyError::PoolError)?;
+    let date_entry = db::remove_user_date(&client, &event_id, &user_id, &date_payload.date).await?;
+    Ok(HttpResponse::Ok().json(date_entry))
+}
+
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("")
@@ -86,6 +98,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .service(get_event_dates)
             .service(get_event_users)
             .service(get_event)
-            .service(get_events),
+            .service(get_events)
+            .service(remove_user_date),
     );
 }

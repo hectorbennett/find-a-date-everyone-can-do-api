@@ -103,7 +103,7 @@ pub async fn add_user_date(
     user_id: &str,
     date: &str,
 ) -> Result<DateEntry, MyError> {
-    let sql = "INSERT INTO dates(event_id, user_id, date) VALUES($1, $2, CAST($3 AS DATE)) RETURNING user_id::TEXT, date::TEXT";
+    let sql = "INSERT INTO dates(event_id, user_id, date) VALUES($1, $2, $3) RETURNING user_id::TEXT, date::TEXT";
     let query = client.prepare(&sql).await?;
     let response = client
         .query(
@@ -125,136 +125,30 @@ pub async fn add_user_date(
     Ok(date_entry)
 }
 
-// pub async fn get_event_date_selections(client: &Client, event_id: &str) -> Result<Vec<User>, MyError> {
-//     let sql = "SELECT id::TEXT, name FROM users";
-//     let query = client.prepare(&sql).await.unwrap();
-//     let users = client
-//         .query(&query, &[])
-//         .await?
-//         .iter()
-//         .map(|row| User::from(row))
-//         .collect::<Vec<User>>();
-
-//     Ok(users)
-// }
-
-// use deadpool_postgres::Client;
-// use tokio_pg_mapper::FromTokioPostgresRow;
-
-// use crate::models::event::{Event, NewEvent};
-// // use crate::models::user::{NewUser, User};
-// // use chrono::prelude::*;
-// // use std::collections::HashMap;
-// use std::fmt::Error;
-// use std::sync::{Arc, Mutex};
-// use tinyid::TinyId;
-
-// fn new_id() -> String {
-//     TinyId::random().to_string()
-// }
-
-// pub struct Database {
-//     pub events: Arc<Mutex<Vec<Event>>>,
-// }
-
-// impl Database {
-//     pub fn new() -> Self {
-//         let events = Arc::new(Mutex::new(vec![]));
-//         Database { events }
-//     }
-
-//     pub fn get_events(&self) -> Vec<Event> {
-//         let events = self.events.lock().unwrap();
-//         events.clone()
-//     }
-
-//     pub fn get_event(&self, id: &str) -> Option<Event> {
-//         let events = self.events.lock().unwrap();
-//         events
-//             .iter()
-//             .find(|event| event.id == id.to_string())
-//             .cloned()
-//     }
-
-//     pub fn create_event(&self, event: NewEvent) -> Result<Event, Error> {
-//         let mut events = self.events.lock().unwrap();
-//         let id = new_id();
-//         let event = Event {
-//             id,
-//             name: event.name,
-//             users: HashMap::new(),
-//             creation_date: Utc::now(),
-//             modification_date: Utc::now(),
-//         };
-//         events.push(event.clone());
-//         Ok(event)
-//     }
-
-//     pub fn create_user(&self, event_id: &str, user: NewUser) -> Result<User, Error> {
-//         let mut events = self.events.lock().unwrap();
-//         let event: &mut Event = events
-//             .iter_mut()
-//             .find(|event| event.id == event_id.to_string())
-//             .unwrap();
-//         let id = new_id();
-//         let user = User {
-//             id: id.clone(),
-//             name: user.name,
-//             dates: vec![],
-//         };
-//         event.users.insert(id, user.clone());
-//         event.modification_date = Utc::now();
-//         Ok(user)
-//     }
-
-//     pub fn add_user_date(
-//         &self,
-//         event_id: &str,
-//         user_id: &str,
-//         date: NaiveDate,
-//     ) -> Result<User, Error> {
-//         let mut events = self.events.lock().unwrap();
-//         let event: &mut Event = events
-//             .iter_mut()
-//             .find(|event| event.id == event_id.to_string())
-//             .unwrap();
-//         let user = event.users.get_mut(user_id).unwrap();
-//         user.dates.push(date);
-//         event.modification_date = Utc::now();
-//         Ok(user.clone())
-//     }
-
-//     pub fn remove_user_date(
-//         &self,
-//         event_id: &str,
-//         user_id: &str,
-//         date: NaiveDate,
-//     ) -> Result<User, Error> {
-//         let mut events = self.events.lock().unwrap();
-//         let event: &mut Event = events
-//             .iter_mut()
-//             .find(|event| event.id == event_id.to_string())
-//             .unwrap();
-//         let user = event.users.get_mut(user_id).unwrap();
-//         user.dates.retain(|&d| d != date);
-//         event.modification_date = Utc::now();
-//         Ok(user.clone())
-//     }
-// }
-
-// use deadpool_postgres::Client;
-
-// use crate::{errors::errors::MyError, models::event::Event};
-
-// pub async fn get_events(client: &Client) -> Result<Vec<Event>, MyError> {
-//     let sql = "SELECT CAST(id AS TEXT), name, CAST(creation_date AS TEXT), CAST(modification_date AS TEXT) FROM events";
-//     let query = client.prepare(&sql).await.unwrap();
-//     let events = client
-//         .query(&query, &[])
-//         .await?
-//         .iter()
-//         .map(|row| Event::from(row))
-//         .collect::<Vec<Event>>();
-
-//     Ok(events)
-// }
+pub async fn remove_user_date(
+    client: &Client,
+    event_id: &str,
+    user_id: &str,
+    date: &str,
+) -> Result<DateEntry, MyError> {
+    let sql = "DELETE FROM dates WHERE event_id = $1 AND user_id = $2 AND date = $3 RETURNING user_id::TEXT, date::TEXT";
+    let query = client.prepare(&sql).await?;
+    let response = client
+        .query(
+            &query,
+            &[
+                &Uuid::from_str(event_id).unwrap(),
+                &Uuid::from_str(user_id).unwrap(),
+                &NaiveDate::parse_from_str(date, "%Y-%m-%d").unwrap(),
+            ],
+        )
+        .await
+        .unwrap();
+    let date_entry = response
+        .iter()
+        .map(|row| DateEntry::from(row))
+        .collect::<Vec<DateEntry>>()
+        .pop()
+        .unwrap();
+    Ok(date_entry)
+}
