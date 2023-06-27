@@ -56,6 +56,8 @@ async fn main() -> std::io::Result<()> {
 
     let pool = config.pg.create_pool(None, connector).unwrap();
 
+    println!("{}", (config.server_addr.clone()));
+
     HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
