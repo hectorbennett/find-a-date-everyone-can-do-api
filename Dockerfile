@@ -1,11 +1,16 @@
-# 1. This tells docker to use the Rust official image
 FROM rust
 
-# 2. Copy the files in your machine to the Docker image
-COPY src /src
+# Build an empty dummy project to cache building dependencies
 COPY Cargo.toml .
+RUN mkdir src && touch src/main.rs
+RUN echo "fn main() {}" >> /src/main.rs
+RUN cargo build --release
 
-# Build your program for release
+# Copy the real project to the Docker image
+RUN rm src/main.rs
+COPY src /src
+
+# Build the program for release
 RUN cargo build --release
 
 # Run the binary
