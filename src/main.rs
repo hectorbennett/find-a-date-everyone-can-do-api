@@ -65,7 +65,7 @@ async fn main() -> std::io::Result<()> {
             .service(healthcheck)
             .default_service(web::route().to(not_found))
     })
-    .bind(config.server_addr.clone())?
+    .bind("0.0.0.0:8080")?
     .run()
     .await
 }
