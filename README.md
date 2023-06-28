@@ -2,7 +2,7 @@
 
 ## Dev
 
-cargo watch -x run
+export $(cat .env.dev | xargs) && cargo watch -x run
 
 ## Deployment
 

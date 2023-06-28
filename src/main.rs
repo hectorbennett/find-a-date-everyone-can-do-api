@@ -1,4 +1,3 @@
-use crate::config::config::ExampleConfig;
 use ::config::Config;
 use actix_cors::Cors;
 use actix_web::{get, middleware::Logger, web, App, HttpResponse, HttpServer, Responder, Result};
@@ -6,6 +5,8 @@ use dotenv::dotenv;
 use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
 use postgres_openssl::MakeTlsConnector;
 use serde::Serialize;
+
+use crate::config::config::ExampleConfig;
 
 mod config;
 mod db;
