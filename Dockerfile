@@ -9,6 +9,7 @@ RUN cargo build --release
 # Copy the real project to the Docker image
 RUN rm src/main.rs
 COPY src /src
+COPY .env .
 
 # Build the program for release
 RUN cargo build --release
