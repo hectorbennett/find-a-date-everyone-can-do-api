@@ -48,12 +48,9 @@ async fn main() -> std::io::Result<()> {
 
     let mut builder =
         SslConnector::builder(SslMethod::tls()).expect("unable to create sslconnector builder");
-    builder
-        .set_ca_file("/Users/hectorbennett/dev/find-a-date-everyone-can-do-api/ca-certificate.crt")
-        .expect("unable to load ca.cert");
     builder.set_verify(SslVerifyMode::NONE);
 
-    let connector = MakeTlsConnector::new(builder.build());
+    let connector: MakeTlsConnector = MakeTlsConnector::new(builder.build());
 
     let pool = config.pg.create_pool(None, connector).unwrap();
 
