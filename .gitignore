@@ -14,6 +14,3 @@ Cargo.lock
 *.pdb
 
 .env.dev
-
-ca-certificate.crt
- 
